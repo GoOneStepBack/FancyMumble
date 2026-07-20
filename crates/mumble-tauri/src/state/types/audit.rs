@@ -1,8 +1,9 @@
 //! Audit-log types surfaced to the admin "Audit Log" panel.
 //!
-//! Entries come from `FancyAuditResponse` pages / `FancyAuditEvent` live-tail
-//! pushes; the configuration snapshot from `FancyAuditConfig` reuses the
-//! generic [`ServerSetting`] schema rows so the audit plugin owns the schema.
+//! Entries arrive as `audit.result` pages over the generic plugin-message
+//! channel (the audit plugin is opaque to the server); the configuration
+//! snapshot (`audit.config`) reuses the generic [`ServerSetting`] schema rows
+//! so the audit plugin owns the schema.
 
 use serde::Serialize;
 

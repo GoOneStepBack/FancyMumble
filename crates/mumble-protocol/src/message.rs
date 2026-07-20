@@ -175,16 +175,10 @@ pub enum TcpMessageType {
     FancyAccountAck = 156,
     // 157-165 are claimed by the forum / scheduled-message features;
     // 169 is reserved for FancyModSignal (audit spec section 6.5).
-    /// Fancy Mumble: auditor searches the audit log / subscribes to a tail.
-    FancyAuditQuery = 166,
-    /// Fancy Mumble: server replies with a page of audit entries.
-    FancyAuditResponse = 167,
-    /// Fancy Mumble: server pushes a live-tail audit entry to a subscriber.
-    FancyAuditEvent = 168,
-    /// Fancy Mumble: server advertises the audit configuration schema.
-    FancyAuditConfig = 170,
-    /// Fancy Mumble: admin submits changed audit configuration.
-    FancyAuditConfigUpdate = 171,
+    // 166-171 were the dedicated FancyAudit* wire IDs. The audit plugin is now
+    // fully opaque to the server and rides the generic PluginMessage channel
+    // (ID 200) as JSON, so these IDs are retired and reserved (169 remains
+    // reserved for FancyModSignal).
     /// Fancy Mumble: generic plugin envelope (bidirectional).
     PluginMessage = 200,
     /// Fancy Mumble: server enumerates loaded plugins after `ServerSync`.
@@ -388,16 +382,6 @@ pub enum ControlMessage {
     FancyAccountSettingsUpdate(mumble_tcp::FancyAccountSettingsUpdate),
     /// Fancy: server status reply for an account operation.
     FancyAccountAck(mumble_tcp::FancyAccountAck),
-    /// Fancy: auditor searches the audit log / subscribes to a live tail.
-    FancyAuditQuery(mumble_tcp::FancyAuditQuery),
-    /// Fancy: server replies with a page of audit entries.
-    FancyAuditResponse(mumble_tcp::FancyAuditResponse),
-    /// Fancy: server pushes a live-tail audit entry to a subscriber.
-    FancyAuditEvent(mumble_tcp::FancyAuditEvent),
-    /// Fancy: server advertises the audit configuration schema.
-    FancyAuditConfig(mumble_tcp::FancyAuditConfig),
-    /// Fancy: admin submits changed audit configuration.
-    FancyAuditConfigUpdate(mumble_tcp::FancyAuditConfigUpdate),
     /// Fancy: generic plugin envelope (bidirectional).
     PluginMessage(mumble_tcp::PluginMessage),
     /// Fancy: server enumerates loaded plugins.
@@ -439,8 +423,6 @@ message_type_mapping! {
     FancyPluginAdminUninstall, FancyPluginAdminAck,
     FancyServerSettings, FancyServerSettingsUpdate,
     FancyAccountSettings, FancyAccountSettingsUpdate, FancyAccountAck,
-    FancyAuditQuery, FancyAuditResponse, FancyAuditEvent,
-    FancyAuditConfig, FancyAuditConfigUpdate,
     PluginMessage, PluginRegistry,
 }
 

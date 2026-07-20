@@ -148,12 +148,6 @@ fancy_message_support! {
     (0, 4, 1) FancyAccountSettingsUpdate     => ServerOnly,
     (0, 4, 1) FancyAccountAck                => ServerOnly,
 
-    // -- Audit log (server-processed, mumble-audit plugin) -- 0.4.2 --
-    (0, 4, 2) FancyAuditQuery                => ServerOnly,
-    (0, 4, 2) FancyAuditResponse             => ServerOnly,
-    (0, 4, 2) FancyAuditEvent                => ServerOnly,
-    (0, 4, 2) FancyAuditConfig               => ServerOnly,
-    (0, 4, 2) FancyAuditConfigUpdate         => ServerOnly,
 }
 
 #[cfg(test)]

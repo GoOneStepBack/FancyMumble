@@ -22,6 +22,16 @@ pub(crate) async fn query_audit_log(
     state.query_audit_log(args).await
 }
 
+/// Request a fresh audit configuration snapshot from the plugin
+/// (`audit.config.get`); the reply arrives as an `audit-config` event. Called
+/// when the Audit tab opens, replacing the old server-initiated config push.
+#[tauri::command]
+pub(crate) async fn request_audit_config(
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    state.request_audit_config().await
+}
+
 /// Audit-admin path: send changed audit configuration to the server.
 #[tauri::command]
 pub(crate) async fn save_audit_config(

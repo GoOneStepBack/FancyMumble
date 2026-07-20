@@ -224,8 +224,14 @@ export const useAuditStore = create<AuditStoreState>((set, get) => ({
 
   loadConfig: async () => {
     try {
+      // Show the cached snapshot immediately (it survives an HMR reload)...
       const config = await invoke<AuditConfigSnapshot | null>("get_audit_config");
       if (config) get().applyConfig(config);
+      // ...then ask the plugin for a fresh one. The server no longer pushes
+      // config on connect (it is opaque to the audit feature), so the client
+      // pulls it when the tab opens; the reply arrives as an `audit-config`
+      // event routed through `applyConfig`.
+      await invoke("request_audit_config");
     } catch (e) {
       set({ configError: String(e) });
     }

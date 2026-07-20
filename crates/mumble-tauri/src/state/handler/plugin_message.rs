@@ -46,6 +46,15 @@ impl HandleMessage for mumble_tcp::PluginMessage {
             return;
         }
         let payload_type = self.payload_type.clone().unwrap_or_default();
+        // The audit plugin is opaque to the server: its traffic rides this
+        // generic channel as JSON. Decode and re-emit it as the admin panel's
+        // `audit-*` events instead of leaking it out as a raw plugin-message.
+        if plugin_name == "fancy-audit" {
+            let bytes = self.payload.as_deref().unwrap_or_default();
+            if super::audit::handle_audit_payload(ctx, &payload_type, bytes) {
+                return;
+            }
+        }
         debug!(
             plugin = %plugin_name,
             payload_type = %payload_type,

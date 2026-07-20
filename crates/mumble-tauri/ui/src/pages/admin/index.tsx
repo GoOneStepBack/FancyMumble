@@ -30,12 +30,10 @@ export function isPluginAdminSupported(v: number | null | undefined): boolean {
   return v != null && v >= PLUGIN_ADMIN_MIN_FANCY_VERSION;
 }
 
-/** Minimum server version for the audit-log protocol (0.4.2). */
-export const AUDIT_LOG_MIN_FANCY_VERSION = fancyVersionEncode(0, 4, 2);
-
-export function isAuditLogSupported(v: number | null | undefined): boolean {
-  return v != null && v >= AUDIT_LOG_MIN_FANCY_VERSION;
-}
+/** Wire name of the audit plugin. The server is now fully opaque to the audit
+ *  feature, so there is no protocol version to test - the tab is gated on the
+ *  plugin advertising itself in the post-ServerSync plugin registry. */
+export const AUDIT_PLUGIN_NAME = "fancy-audit";
 
 type Tab =
   | "users" | "roles" | "bans" | "acl" | "emotes" | "onboarding"
@@ -78,9 +76,13 @@ export default function AdminPanel() {
   // The file-server admin dashboard needs server-admin rights (Write on root,
   // the same gate the server enforces) and a connected file server.
   const canManageFileServer = fileServerEnabled && (rootChannelPerms & PERM_WRITE) !== 0;
-  // The audit page needs the audit protocol (0.4.2+) and the ViewAudit gate,
-  // which resolves to Write on root today (same as the other admin surfaces).
-  const canViewAudit = isAuditLogSupported(serverFancyVersion) && (rootChannelPerms & PERM_WRITE) !== 0;
+  // The audit page is gated on capability, not server version: the audit
+  // plugin advertises itself in the plugin registry (sent after ServerSync)
+  // when loaded. Plus the ViewAudit gate, which resolves to Write on root.
+  const auditPluginLoaded = useAppStore((s) =>
+    s.pluginRegistry.some((p) => p.pluginName === AUDIT_PLUGIN_NAME),
+  );
+  const canViewAudit = auditPluginLoaded && (rootChannelPerms & PERM_WRITE) !== 0;
   // If the file-server plugin is disabled at runtime while its tab is open,
   // its gate flips false - redirect back to a tab that still exists.
   useEffect(() => {
