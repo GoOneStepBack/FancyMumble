@@ -227,44 +227,66 @@ impl AppState {
     }
 
     fn store_own_message(&self, msg_data: OwnMessageData) {
-        let __session = self.inner.snapshot();
-        let Ok(mut state) = __session.lock() else {
-            return;
-        };
-        let mut msg = ChatMessage {
-            sender_session: msg_data.own_session,
-            sender_name: msg_data.own_name,
-            sender_hash: msg_data.own_hash,
-            body: msg_data.body,
-            channel_id: msg_data.channel_id,
-            is_own: true,
-            dm_session: None,
-            message_id: msg_data.message_id,
-            timestamp: msg_data.timestamp,
-            is_legacy: false,
-            send_failed: false,
-            edited_at: None,
-            pinned: false,
-            pinned_by: None,
-            pinned_at: None,
-            plugin_name: None,
-            plugin_components: None,
-        };
-        msg.ensure_id();
+        use crate::state::types::NewMessagePayload;
+        use tauri::Emitter;
 
-        if msg_data
-            .pchat_protocol
-            .is_some_and(|p| p == PchatProtocol::SignalV1)
+        let channel_id = msg_data.channel_id;
+        let own_session = msg_data.own_session;
         {
-            cache_own_signal_message(&mut state, &msg, msg_data.channel_id);
+            let __session = self.inner.snapshot();
+            let Ok(mut state) = __session.lock() else {
+                return;
+            };
+            let mut msg = ChatMessage {
+                sender_session: msg_data.own_session,
+                sender_name: msg_data.own_name,
+                sender_hash: msg_data.own_hash,
+                body: msg_data.body,
+                channel_id,
+                is_own: true,
+                dm_session: None,
+                message_id: msg_data.message_id,
+                timestamp: msg_data.timestamp,
+                is_legacy: false,
+                send_failed: false,
+                edited_at: None,
+                pinned: false,
+                pinned_by: None,
+                pinned_at: None,
+                plugin_name: None,
+                plugin_components: None,
+            };
+            msg.ensure_id();
+
+            if msg_data
+                .pchat_protocol
+                .is_some_and(|p| p == PchatProtocol::SignalV1)
+            {
+                cache_own_signal_message(&mut state, &msg, channel_id);
+            }
+
+            let bucket = state.msgs.by_channel.entry(channel_id).or_default();
+            super::push_capped(bucket, msg);
         }
 
-        let bucket = state
-            .msgs
-            .by_channel
-            .entry(msg_data.channel_id)
-            .or_default();
-        super::push_capped(bucket, msg);
+        // Mirrors the incoming-message path (`text_message.rs`'s
+        // `DeferredEvent::NewMessage`): without this, a caller of the
+        // `send_message` command that does not also refetch messages itself
+        // sees the store gain the message with no signal telling it to -
+        // `get_messages` proves it landed, the UI never re-renders. The
+        // composer's own call site happens to paper over that with a manual
+        // refetch right after `send_message` resolves, which is why this
+        // stayed unnoticed: anything else driving the command, an e2e
+        // harness or a future caller, got the silent gap instead.
+        if let Some(app) = self.app_handle() {
+            let _ = app.emit(
+                "new-message",
+                NewMessagePayload {
+                    channel_id,
+                    sender_session: own_session,
+                },
+            );
+        }
     }
 
     /// Inject a plugin-authored chat message into the local channel
